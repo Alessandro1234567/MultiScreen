@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Comandi rapidi per MultiScreen
+LOG="${XDG_STATE_HOME:-$HOME/.local/state}/multiscreen/host.log"
+case "${1:-status}" in
+  status)  systemctl --user --no-pager status multiscreen.service | head -n 12; echo; tail -n 15 "$LOG" 2>/dev/null ;;
+  log)     tail -n 200 -f "$LOG" ;;
+  restart) systemctl --user restart multiscreen.service && echo "riavviato" ;;
+  stop)    systemctl --user stop multiscreen.service && echo "fermato (riparte al prossimo login)" ;;
+  start)   systemctl --user start multiscreen.service && echo "avviato" ;;
+  off)     systemctl --user disable --now multiscreen.service && echo "disattivato (non parte piu' da solo)" ;;
+  on)      systemctl --user enable --now multiscreen.service && echo "attivato" ;;
+  send)    shift; exec "$HOME/.local/bin/multiscreen-host" --send "$@" ;;
+  uninstall|rimuovi) exec bash "${XDG_DATA_HOME:-$HOME/.local/share}/multiscreen/uninstall.sh" ;;
+  test)    systemctl --user stop multiscreen.service; "$HOME/.local/bin/multiscreen-host" --selftest; r=$?; systemctl --user start multiscreen.service; exit $r ;;
+  config)  mkdir -p ~/.config/multiscreen; f=~/.config/multiscreen/host.conf
+           [ -f "$f" ] || printf '[host]\n# encoder=auto   (va-lp, va, vaapi, va-sw-upload, x264)\n# grace_seconds=20\n# scroll_factor=1.0\n' > "$f"
+           ${EDITOR:-nano} "$f"; systemctl --user restart multiscreen.service ;;
+  *) echo "uso: multiscreen [status|log|send FILE...|restart|stop|start|on|off|test|config|uninstall]"; exit 1 ;;
+esac

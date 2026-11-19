@@ -1,0 +1,8 @@
+linux/build/
+android/build/
+logs/
+.dev/
+dist/
+*.keystore
+.multiscreen-src*
+android/multiscreen.apk*

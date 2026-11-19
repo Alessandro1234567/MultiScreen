@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+MimeType=application/octet-stream;all/allfiles;inode/directory;
+Actions=sendToTablet
+X-KDE-Priority=TopLevel
+
+[Desktop Action sendToTablet]
+Name=Invia al tablet
+Icon=tablet
+Exec=@BIN@ --send %F
