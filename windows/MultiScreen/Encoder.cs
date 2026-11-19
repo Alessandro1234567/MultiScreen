@@ -13,7 +13,7 @@ sealed class Encoder : IDisposable
     Process _p;
     volatile bool _stop;
     public string Name { get; private set; } = "";
-    public static string FfmpegPath => Path.Combine(AppContext.BaseDirectory, "tools", "ffmpeg.exe");
+    public static string FfmpegPath => Environment.GetEnvironmentVariable("MULTISCREEN_FFMPEG") ?? Path.Combine(AppContext.BaseDirectory, "tools", "ffmpeg.exe");
     static string _lastGood; // encoder che ha funzionato (per partire subito da quello)
 
     public Encoder(int adapter, int output, int w, int h, int fps, int kbps, FrameHandler onFrame)
@@ -65,7 +65,10 @@ sealed class Encoder : IDisposable
     {
         // la cattura (ddagrab) usa la scheda video dello schermo: -filter_hw_device vale solo dentro -filter_complex
         string graph = $"ddagrab=output_idx={_output}:framerate={_fps}:dup_frames=0:draw_mouse=1" + (filters != "" ? "," + filters : "");
-        string a = $"-hide_banner -loglevel error -nostdin -init_hw_device d3d11va=d3d:{_adapter} -filter_hw_device d3d " +
+        string hw = $"-init_hw_device d3d11va=d3d:{_adapter} -filter_hw_device d3d ";
+        string test = Environment.GetEnvironmentVariable("MULTISCREEN_TEST_GRAPH"); // solo per i test
+        if (test != null) { graph = test; hw = ""; }
+        string a = $"-hide_banner -loglevel error -nostdin {hw}" +
                    $"-filter_complex \"{graph}\" {encArgs} -flush_packets 1 -flvflags no_duration_filesize -f flv pipe:1";
         try
         {
