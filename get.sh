@@ -6,7 +6,7 @@ REPO="Alessandro1234567/multiscreen"
 DIR="${XDG_DATA_HOME:-$HOME/.local/share}/multiscreen/pacchetto"
 TMP="$(mktemp -d)"
 echo "Scarico MultiScreen…"
-curl -fsSL "https://github.com/$REPO/releases/latest/download/multiscreen-linux.tar.gz" -o "$TMP/ms.tar.gz"
+curl -fsSL "https://github.com/$REPO/archive/refs/heads/main.tar.gz" -o "$TMP/ms.tar.gz"
 rm -rf "$DIR" && mkdir -p "$DIR"
 tar xzf "$TMP/ms.tar.gz" -C "$DIR" --strip-components=1
 rm -rf "$TMP"
