@@ -21,18 +21,19 @@ sealed class Encoder : IDisposable
         _adapter = adapter; _output = output; _w = w; _h = h; _fps = fps; _kbps = kbps; _onFrame = onFrame;
     }
 
-    List<(string id, string args)> Candidates(uint vendor)
+    /// (id, filtri dopo la cattura, opzioni encoder)
+    List<(string id, string filters, string args)> Candidates(uint vendor)
     {
         int g = Math.Max(_fps, 15) * 2, buf = Math.Max(_kbps / Math.Max(_fps, 1) * 2, 500);
         string rate = $"-b:v {_kbps}k -maxrate {_kbps}k -bufsize {buf}k -g {g} -bf 0";
-        var all = new List<(string, string)>
+        var all = new List<(string, string, string)>
         {
-            ("nvenc", $"-c:v h264_nvenc -preset p1 -tune ull -zerolatency 1 -delay 0 -rc cbr {rate} -forced-idr 1"),
-            ("qsv", $"-vf hwmap=derive_device=qsv,format=qsv,vpp_qsv=format=nv12 -c:v h264_qsv -preset veryfast -low_power 1 -async_depth 1 -look_ahead 0 {rate}"),
-            ("qsv2", $"-vf hwmap=derive_device=qsv,format=qsv -c:v h264_qsv -preset veryfast -async_depth 1 {rate}"),
-            ("amf", $"-c:v h264_amf -usage ultralowlatency -quality speed -rc cbr {rate}"),
-            ("mf", $"-vf hwdownload,format=bgra,format=nv12 -c:v h264_mf -hw_encoding 1 -scenario display_remoting {rate}"),
-            ("x264", $"-vf hwdownload,format=bgra,format=yuv420p -c:v libx264 -preset ultrafast -tune zerolatency -threads 4 {rate}"),
+            ("nvenc", "", $"-c:v h264_nvenc -preset p1 -tune ull -zerolatency 1 -delay 0 -rc cbr {rate} -forced-idr 1"),
+            ("qsv", "hwmap=derive_device=qsv,format=qsv,vpp_qsv=format=nv12", $"-c:v h264_qsv -preset veryfast -low_power 1 -async_depth 1 -look_ahead 0 {rate}"),
+            ("qsv2", "hwmap=derive_device=qsv,format=qsv", $"-c:v h264_qsv -preset veryfast -async_depth 1 {rate}"),
+            ("amf", "", $"-c:v h264_amf -usage ultralowlatency -quality speed -rc cbr {rate}"),
+            ("mf", "hwdownload,format=bgra,format=nv12", $"-c:v h264_mf -hw_encoding 1 -scenario display_remoting {rate}"),
+            ("x264", "hwdownload,format=bgra,format=yuv420p", $"-c:v libx264 -preset ultrafast -tune zerolatency -threads 4 {rate}"),
         };
         string first = vendor switch { 0x10DE => "nvenc", 0x8086 => "qsv", 0x1002 => "amf", _ => "mf" };
         return all.OrderBy(c => c.Item1 == _lastGood ? 0 : c.Item1 == first ? 1 : c.Item1.StartsWith(first) ? 2 : 3).ToList();
@@ -41,12 +42,13 @@ sealed class Encoder : IDisposable
     /// Prova gli encoder finche' uno produce video. Ritorna false se nessuno funziona.
     public bool Start(uint vendor)
     {
-        foreach (var (id, args) in Candidates(vendor))
+        foreach (var (id, filters, args) in Candidates(vendor))
         {
             if (_stop) return false;
             var started = new ManualResetEventSlim();
-            if (!Launch(id, args, started)) continue;
-            if (started.Wait(6000) && !_p.HasExited)
+            if (!Launch(id, filters, args, started)) continue;
+            for (int i = 0; i < 60 && !started.IsSet && !_p.HasExited; i++) started.Wait(100); // max 6 s
+            if (started.IsSet && !_p.HasExited)
             {
                 Name = id;
                 _lastGood = id;
@@ -59,11 +61,12 @@ sealed class Encoder : IDisposable
         return false;
     }
 
-    bool Launch(string id, string encArgs, ManualResetEventSlim started)
+    bool Launch(string id, string filters, string encArgs, ManualResetEventSlim started)
     {
-        string a = $"-hide_banner -loglevel error -nostdin -fflags nobuffer -init_hw_device d3d11va=d3d:{_adapter} -filter_hw_device d3d " +
-                   $"-f lavfi -i ddagrab=output_idx={_output}:framerate={_fps}:dup_frames=0:draw_mouse=1 " +
-                   $"{encArgs} -flush_packets 1 -flvflags no_duration_filesize -f flv pipe:1";
+        // la cattura (ddagrab) usa la scheda video dello schermo: -filter_hw_device vale solo dentro -filter_complex
+        string graph = $"ddagrab=output_idx={_output}:framerate={_fps}:dup_frames=0:draw_mouse=1" + (filters != "" ? "," + filters : "");
+        string a = $"-hide_banner -loglevel error -nostdin -init_hw_device d3d11va=d3d:{_adapter} -filter_hw_device d3d " +
+                   $"-filter_complex \"{graph}\" {encArgs} -flush_packets 1 -flvflags no_duration_filesize -f flv pipe:1";
         try
         {
             var psi = new ProcessStartInfo(FfmpegPath, a)

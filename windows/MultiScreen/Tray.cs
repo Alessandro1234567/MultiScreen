@@ -33,6 +33,7 @@ static class Tray
         nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
         Shell_NotifyIcon(NIM_ADD, ref nid);
         AddClipboardFormatListener(_hwnd);
+        PostMessage(_hwnd, WM_BALLOON, IntPtr.Zero, IntPtr.Zero); // notifiche arrivate prima della finestra
         while (GetMessage(out var m, IntPtr.Zero, 0, 0) > 0)
         {
             TranslateMessage(ref m);

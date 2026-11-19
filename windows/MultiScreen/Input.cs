@@ -19,7 +19,7 @@ static class Input
             if (!_touchReady) _touchReady = InitializeTouchInjection(10, 1);
             if (!_touchReady) return;
             var changed = new Dictionary<uint, (byte state, POINT p)>();
-            foreach (var t in pts) changed[t.id] = (t.state, Map(m, t.x, t.y));
+            foreach (var t in pts) changed[t.id % 10] = (t.state, Map(m, t.x, t.y)); // Windows: id 0..9
             var list = new List<POINTER_TOUCH_INFO>();
             foreach (var (id, ch) in changed)
                 list.Add(Contact(id, ch.p, ch.state == 0 ? POINTER_FLAG_DOWN | POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT

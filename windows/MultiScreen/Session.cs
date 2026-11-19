@@ -158,7 +158,7 @@ sealed class Session : IDisposable
                 for (int i = 0; i < n; i++)
                 {
                     int o = 1 + i * 6;
-                    pts[i] = ((uint)(d[o] + 32 * (Index - 1)), d[o + 1], Proto.U16(d, o + 2), Proto.U16(d, o + 4));
+                    pts[i] = (d[o], d[o + 1], Proto.U16(d, o + 2), Proto.U16(d, o + 4));
                 }
                 Input.Touch(m, pts);
                 LastActive = DateTime.Now;
