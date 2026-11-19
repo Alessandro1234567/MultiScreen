@@ -6,3 +6,6 @@ dist/
 *.keystore
 .multiscreen-src*
 android/multiscreen.apk*
+windows/publish/
+windows/MultiScreen/bin/
+windows/MultiScreen/obj/

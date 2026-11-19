@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define MS_VERSION "1.3"
+#define MS_VERSION "1.4"
 #define MS_PACKAGE "com.zago.multiscreen"
 #define MS_ACTIVITY MS_PACKAGE "/.MainActivity"
 #define MS_OUTPUT_NAME "MultiScreen"

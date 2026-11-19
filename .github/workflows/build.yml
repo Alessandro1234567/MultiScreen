@@ -30,8 +30,32 @@ jobs:
         with:
           name: linux-android
           path: dist/*
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compila
+        shell: pwsh
+        run: |
+          dotnet publish windows/MultiScreen/MultiScreen.csproj -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o windows/publish
+          $v = Select-String -Path android/AndroidManifest.xml -Pattern 'versionCode="(\d+)"' | % { $_.Matches[0].Groups[1].Value }
+          Set-Content -Path windows/publish/apk-version -Value $v -NoNewline
+      - name: Installer
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+          $env:MS_VERSION = (Select-String -Path linux/src/common.h -Pattern 'MS_VERSION "([^"]+)"').Matches[0].Groups[1].Value
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows\installer.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/MultiScreen-Setup.exe
   release:
-    needs: [linux-android]
+    needs: [linux-android, windows]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
@@ -49,5 +73,7 @@ jobs:
             ```
             curl -fsSL https://raw.githubusercontent.com/Alessandro1234567/multiscreen/main/get.sh | bash
             ```
+            **PC con Windows 10/11:** scarica ed esegui `MultiScreen-Setup.exe` qui sotto.
+
             **Tablet:** attiva *Debug USB* e collega il cavo: l'app si installa da sola
             (oppure installa `MultiScreen.apk` da qui).

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>MultiScreen</AssemblyName>
+    <RootNamespace>MultiScreen</RootNamespace>
+    <Version>1.4.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+    <!-- solo API Win32: compila ovunque, gira su Windows 10/11 x64 -->
+    <NoWarn>CA1416;CS8981</NoWarn>
+  </PropertyGroup>
+</Project>
